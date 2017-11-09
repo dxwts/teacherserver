@@ -2,10 +2,166 @@
 <html>
   <head>
     <title><%= title %></title>
+    <link rel='stylesheet' href='css/bulma.css' />
     <link rel='stylesheet' href='/stylesheets/style.css' />
   </head>
   <body>
-    <h1><%= title %></h1>
-    <p>Welcome to <%= title %></p>
+    <canvas id="canvas" ></canvas>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/socket.io.js"></script>
+    <script src="js/fabric.js"></script>
+    <script type="text/javascript">
+      var isSync = false;
+      var canvas; 
+
+    $(function () {
+      var socket = io('', {
+        path: '/socket.io-client'
+      });
+
+      socket.on('canvas:update', function(data){
+        isSync = true;
+        canvas.loadFromJSON(data, canvas.renderAll.bind(canvas));
+      });
+
+      socket.on('object:selected', function(msg){
+        isSync = true;
+        var objects = canvas.getObjects();
+        objects.forEach(function(obj){
+          if(msg.id === obj.id){
+            obj.set(msg).setCoords();
+            canvas.renderAll();
+          }
+        });
+      });
+
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+
+      canvas = new fabric.Canvas('canvas')
+      canvas.setHeight(height)
+      canvas.setWidth(width)
+      fabric.Object.prototype.transparentCorners = false
+      canvas.isDrawingMode = false
+      canvas.freeDrawingBrush = new fabric.PencilBrush(canvas)
+      canvas.freeDrawingBrush.width = 2
+      canvas.renderAll();
+
+      var rect1 = new fabric.Rect({
+        width: 200,
+        height: 100,
+        left: 0,
+        top: 50,
+        angle: 30,
+        fill: 'rgba(255,0,0,0.5)'
+      });
+      canvas.add(rect1);
+
+      canvas.on({
+        'touch:gesture': function() {
+          var text = document.createTextNode(' Gesture ');
+          info.insertBefore(text, info.firstChild);
+        },
+        'touch:drag': function() {
+          var text = document.createTextNode(' Dragging ');
+          info.insertBefore(text, info.firstChild);
+        },
+        'touch:orientation': function() {
+          var text = document.createTextNode(' Orientation ');
+          info.insertBefore(text, info.firstChild);
+        },
+        'touch:shake': function() {
+          var text = document.createTextNode(' Shaking ');
+          info.insertBefore(text, info.firstChild);
+        },
+        'touch:longpress': function() {
+          var text = document.createTextNode(' Longpress ');
+          info.insertBefore(text, info.firstChild);
+        },
+        'mouse:down': function (e) {
+          var point = {x: e.e.clientX, y: e.e.clientY};
+          socket.emit('mouse:down', point);
+          isSync = false;
+        },
+        'mouse:up': function (e) {
+          var point = {x: e.e.clientX, y: e.e.clientY};
+          socket.emit('mouse:up', point);
+        },
+        'mouse:move': function (e) {
+          var point = {x: e.e.clientX, y: e.e.clientY};
+          socket.emit('mouse:move', point);
+        },
+        'object:added': function (e) {
+          // console.log('object:added');
+          if (!isSync) {
+            socket.emit('canvas:update', canvas.toJSON());
+          }
+        },
+        'object:removed': function (e) {
+          // console.log('object:removed');
+          if (!isSync) {
+            socket.emit('canvas:update', canvas.toJSON());
+          }
+        },
+        'object:modified': function (e) {
+          // console.log('object:modified');
+          if (!isSync) {
+            socket.emit('canvas:update', canvas.toJSON());
+          }
+        },
+        'object:rotating': function (e) {
+          // console.log('object:rotating');
+          if (!isSync) {
+            socket.emit('canvas:update', canvas.toJSON());
+          }
+        },
+        'object:scaling': function (e) {
+          // console.log('object:scaling');
+          if (!isSync) {
+            socket.emit('canvas:update', canvas.toJSON());
+          }
+        },
+        'object:moving': function (e) {
+          // console.log('object:moving');
+          if (!isSync) {
+            socket.emit('canvas:update', canvas.toJSON());
+          }
+
+        },
+        'object:selected': function (e) {
+          // console.log('object:selected');
+          if (!isSync) {
+            socket.emit('object:selected', e.target.toObject());
+          }
+        },
+        'before:selection:cleared': function (e) {
+          // console.log('before:selection:cleared');
+          if (!isSync) {
+            socket.emit('canvas:update', canvas.toJSON());
+          }
+        },
+        'selection:cleared': function (e) {
+          // console.log('selection:cleared');
+          if (!isSync) {
+            socket.emit('canvas:update', canvas.toJSON());
+          }
+        },
+        'selection:updated': function (e) {
+          // console.log('selection:updated');
+          if (!isSync) {
+            socket.emit('canvas:update', canvas.toJSON());
+          }
+        },
+        'path:created': function (e) {
+          // console.log('path:created');
+          if (!isSync) {
+            socket.emit('canvas:update', canvas.toJSON());
+          }
+        }
+
+    });
+
+    });
+    </script>
   </body>
 </html>
